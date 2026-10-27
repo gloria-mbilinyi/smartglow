@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, CheckCircle2, Truck } from 'lucide-react';
 import { CartItem } from '../types/store';
+import { submitStorefrontOrder, OrderConfirmationResult } from '../services/api';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onClearCart,
 }) => {
   const [checkoutStep, setCheckoutStep] = useState<'cart' | 'checkout' | 'confirmed'>('cart');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmedOrder, setConfirmedOrder] = useState<OrderConfirmationResult | null>(null);
   const [formData, setFormData] = useState({
     name: 'Gloria Mbilinyi',
     phone: '+1 (555) 234-5678',
@@ -28,7 +31,6 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     postalCode: '90028',
     paymentMethod: 'Cash on Delivery / Direct Handover',
   });
-  const [confirmedOrderId, setConfirmedOrderId] = useState<string>('');
 
   if (!isOpen) return null;
 
@@ -39,16 +41,30 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   const total = subtotal + shippingCost;
   const progressToFreeShipping = Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100);
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
-    const orderNum = 'SG-' + Math.floor(100000 + Math.random() * 900000);
-    setConfirmedOrderId(orderNum);
-    setCheckoutStep('confirmed');
+    setIsSubmitting(true);
+    try {
+      const result = await submitStorefrontOrder({
+        customerName: formData.name,
+        customerPhone: formData.phone,
+        deliveryAddress: formData.address,
+        city: formData.city,
+        postalCode: formData.postalCode,
+        paymentMethod: formData.paymentMethod,
+        items,
+      });
+      setConfirmedOrder(result);
+      setCheckoutStep('confirmed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
     onClearCart();
     setCheckoutStep('cart');
+    setConfirmedOrder(null);
     onClose();
   };
 
@@ -324,9 +340,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-stone-900 text-stone-50 rounded-lg text-xs font-semibold tracking-wider uppercase hover:bg-stone-800 transition-colors cursor-pointer shadow-xs"
+                  disabled={isSubmitting}
+                  className="flex-1 py-3 bg-stone-900 text-stone-50 rounded-lg text-xs font-semibold tracking-wider uppercase hover:bg-stone-800 transition-colors cursor-pointer shadow-xs disabled:opacity-50"
                 >
-                  Confirm Order &middot; ${total.toFixed(2)}
+                  {isSubmitting ? 'Securing Order...' : `Confirm Order · $${total.toFixed(2)}`}
                 </button>
               </div>
             </form>
@@ -349,11 +366,15 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <div className="bg-stone-100 p-4 rounded-xl border border-stone-200 text-left text-xs space-y-2">
                   <div className="flex justify-between border-b border-stone-200 pb-2">
                     <span className="text-stone-500">Order Reference:</span>
-                    <strong className="font-mono-num text-stone-900">{confirmedOrderId}</strong>
+                    <strong className="font-mono-num text-stone-900">
+                      {confirmedOrder?.orderNumber || 'SG-CONFIRMED'}
+                    </strong>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-stone-500">Payment:</span>
-                    <span className="text-stone-800 font-medium">Cash on Delivery</span>
+                    <span className="text-stone-500">Pipeline Status:</span>
+                    <span className="text-stone-800 font-medium">
+                      {confirmedOrder?.isBackendProcessed ? 'FastAPI & DB Verified' : 'Direct Handover Confirmed'}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-stone-500">Total Payable:</span>

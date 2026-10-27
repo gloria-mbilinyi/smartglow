@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { CategoryNav } from './components/CategoryNav';
@@ -9,6 +9,7 @@ import { CartDrawer } from './components/CartDrawer';
 import { Footer } from './components/Footer';
 import { MOCK_PRODUCTS } from './data/mockProducts';
 import { Product, ProductCategory, CartItem, FilterState } from './types/store';
+import { fetchStorefrontProducts } from './services/api';
 import { Sparkles, RotateCcw } from 'lucide-react';
 
 export default function App() {
@@ -102,52 +103,24 @@ export default function App() {
     catalogRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // Filtered & Sorted Products Memo
-  const filteredProducts = useMemo(() => {
-    return MOCK_PRODUCTS.filter((product) => {
-      // Category filter
-      if (filterState.category !== 'All' && product.category !== filterState.category) {
-        return false;
-      }
+  // Products State with Live Backend Fetch + Resilient Client Fallback
+  const [productsList, setProductsList] = useState<Product[]>(MOCK_PRODUCTS);
+  const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
 
-      // Skin Type filter
-      if (filterState.skinType !== 'All') {
-        const matchesType =
-          product.skinTypes.includes('All') || product.skinTypes.includes(filterState.skinType);
-        if (!matchesType) return false;
+  useEffect(() => {
+    let isCancelled = false;
+    fetchStorefrontProducts(filterState).then((result) => {
+      if (!isCancelled) {
+        setProductsList(result.products);
+        setIsBackendConnected(result.isLiveBackend);
       }
-
-      // Skin Concern filter
-      if (filterState.skinConcern !== 'All') {
-        const matchesConcern =
-          product.skinConcerns.includes('All') ||
-          product.skinConcerns.includes(filterState.skinConcern);
-        if (!matchesConcern) return false;
-      }
-
-      // Search Query filter
-      if (filterState.searchQuery.trim() !== '') {
-        const query = filterState.searchQuery.toLowerCase();
-        const matchesName = product.name.toLowerCase().includes(query);
-        const matchesSub = product.subtitle.toLowerCase().includes(query);
-        const matchesIngredients = product.keyIngredients.some((i) =>
-          i.toLowerCase().includes(query)
-        );
-        const matchesDesc = product.description.toLowerCase().includes(query);
-        if (!matchesName && !matchesSub && !matchesIngredients && !matchesDesc) {
-          return false;
-        }
-      }
-
-      return true;
-    }).sort((a, b) => {
-      if (filterState.sortBy === 'price-asc') return a.price - b.price;
-      if (filterState.sortBy === 'price-desc') return b.price - a.price;
-      if (filterState.sortBy === 'rating') return b.rating - a.rating;
-      return 0; // 'featured' retains original catalogue order
     });
+    return () => {
+      isCancelled = true;
+    };
   }, [filterState]);
 
+  const filteredProducts = productsList;
   const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
