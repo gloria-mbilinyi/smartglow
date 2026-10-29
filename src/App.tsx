@@ -8,6 +8,7 @@ import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
 import { AccountModal } from './components/AccountModal';
 import { AdminInventoryModal } from './components/AdminInventoryModal';
+import { SkinAnalysisModal } from './components/SkinAnalysisModal';
 import { Footer } from './components/Footer';
 import { MOCK_PRODUCTS } from './data/mockProducts';
 import { Product, ProductCategory, CartItem, FilterState } from './types/store';
@@ -26,6 +27,7 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isSkinAnalysisOpen, setIsSkinAnalysisOpen] = useState(false);
 
   // Storefront Filtering State
   const [filterState, setFilterState] = useState<FilterState>({
@@ -204,6 +206,7 @@ export default function App() {
         currentUser={currentUser}
         onOpenAccount={() => setIsAccountOpen(true)}
         onOpenAdminWarehouse={() => setIsAdminOpen(true)}
+        onOpenSkinAnalysis={() => setIsSkinAnalysisOpen(true)}
       />
 
       {/* Hero Section */}
@@ -213,6 +216,7 @@ export default function App() {
           updateFilter({ skinConcern: 'Dullness' });
           scrollToCatalog();
         }}
+        onStartSkinAnalysis={() => setIsSkinAnalysisOpen(true)}
       />
 
       {/* Catalog Area Anchor */}
@@ -315,6 +319,22 @@ export default function App() {
           adminToken={authToken}
         />
       )}
+
+      {/* AI Skin Analysis & Routine Calibration Modal */}
+      <SkinAnalysisModal
+        isOpen={isSkinAnalysisOpen}
+        onClose={() => setIsSkinAnalysisOpen(false)}
+        products={productsList}
+        currentUser={currentUser}
+        authToken={authToken}
+        onAddToCart={(p) => {
+          handleAddToCart(p, 1);
+          setIsCartOpen(true);
+        }}
+        onProfileUpdated={(updatedUser) => {
+          setCurrentUser(updatedUser);
+        }}
+      />
 
       {/* Footer */}
       <Footer onSelectCategory={(cat) => updateFilter({ category: cat })} />

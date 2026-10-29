@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Search, X, Menu, User, Warehouse } from 'lucide-react';
+import { ShoppingBag, Search, X, Menu, User, Warehouse, Sparkles } from 'lucide-react';
 import { ProductCategory } from '../types/store';
 import { UserProfile } from '../services/api';
 
@@ -13,6 +13,7 @@ interface NavbarProps {
   currentUser: UserProfile | null;
   onOpenAccount: () => void;
   onOpenAdminWarehouse?: () => void;
+  onOpenSkinAnalysis: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -25,6 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   onOpenAccount,
   onOpenAdminWarehouse,
+  onOpenSkinAnalysis,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -108,6 +110,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
+          {/* AI Skin Analysis Button */}
+          <button
+            onClick={onOpenSkinAnalysis}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-stone-900 bg-amber-50/80 hover:bg-amber-100/90 border border-amber-300/80 rounded-lg transition-all cursor-pointer shadow-xs"
+            title="Launch AI Skin Analysis"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span className="hidden sm:inline">AI Skin Analysis</span>
+          </button>
+
           {/* Admin Warehouse Button (Visible only to Admin) */}
           {currentUser?.role === 'admin' && onOpenAdminWarehouse && (
             <button
@@ -159,29 +171,41 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
         <div className="lg:hidden border-t border-stone-200 bg-[#faf9f6] px-4 py-4 space-y-3">
-          <div className="flex gap-2 pb-2 border-b border-stone-200">
+          <div className="space-y-2 pb-2 border-b border-stone-200">
             <button
               onClick={() => {
-                onOpenAccount();
+                onOpenSkinAnalysis();
                 setIsMobileMenuOpen(false);
               }}
-              className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-white border border-stone-300 rounded-lg text-xs font-medium text-stone-800"
+              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-amber-50 border border-amber-300 rounded-lg text-xs font-semibold text-amber-950 shadow-xs"
             >
-              <User className="w-4 h-4 text-stone-700" />
-              <span>{currentUser ? currentUser.fullName : 'Account / Sign In'}</span>
+              <Sparkles className="w-4 h-4 text-amber-600" />
+              <span>Launch AI Skin Analysis</span>
             </button>
-            {currentUser?.role === 'admin' && onOpenAdminWarehouse && (
+            <div className="flex gap-2">
               <button
                 onClick={() => {
-                  onOpenAdminWarehouse();
+                  onOpenAccount();
                   setIsMobileMenuOpen(false);
                 }}
-                className="flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-50 border border-amber-300 rounded-lg text-xs font-semibold text-amber-900"
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-white border border-stone-300 rounded-lg text-xs font-medium text-stone-800"
               >
-                <Warehouse className="w-4 h-4 text-amber-800" />
-                <span>Warehouse</span>
+                <User className="w-4 h-4 text-stone-700" />
+                <span>{currentUser ? currentUser.fullName : 'Account / Sign In'}</span>
               </button>
-            )}
+              {currentUser?.role === 'admin' && onOpenAdminWarehouse && (
+                <button
+                  onClick={() => {
+                    onOpenAdminWarehouse();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-50 border border-amber-300 rounded-lg text-xs font-semibold text-amber-900"
+                >
+                  <Warehouse className="w-4 h-4 text-amber-800" />
+                  <span>Warehouse</span>
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2 px-2">

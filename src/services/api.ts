@@ -550,3 +550,147 @@ export async function updateOrderStatus(
     throw new Error(err.detail || 'Failed to update order status.');
   }
 }
+
+// ==========================================
+// Phase 6 AI Skin Analysis API Integration
+// ==========================================
+
+export interface DiagnosticPreset {
+  id: string;
+  title: string;
+  description: string;
+  skin_type: string;
+  skin_tone: string;
+  measurements: {
+    redness: number;
+    shine: number;
+    texture: number;
+    pores: number;
+  };
+}
+
+export interface BackendSkinAnalysisResult {
+  quality: {
+    is_adequate_resolution: boolean;
+    is_sufficient_lighting: boolean;
+    is_face_centered: boolean;
+    is_acceptable: boolean;
+    lighting_score: number;
+    sharpness_score: number;
+    feedback_message: string;
+    uncertainty_reasons: string[];
+  };
+  observable_metrics: {
+    redness_index: number;
+    shine_index: number;
+    texture_roughness_index: number;
+    pore_prominence_index: number;
+    overall_confidence: number;
+    estimated_skin_tendency: string;
+    is_reliable: boolean;
+  };
+  regions: Array<{
+    region_name: string;
+    relative_redness: number;
+    specular_shine: number;
+    texture_roughness: number;
+    observation_summary: string;
+  }>;
+  recommendations: Array<{
+    product_id: string;
+    product_name: string;
+    category: string;
+    price: number;
+    image_url: string;
+    match_score: number;
+    why_it_matches: string;
+    target_trait: string;
+    key_active_ingredients: string[];
+    allergen_safety_status: string;
+    skin_type_alignment: string;
+  }>;
+  disclaimer: string;
+  processed_at: string;
+}
+
+export async function fetchDiagnosticPresets(): Promise<DiagnosticPreset[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/skin-analysis/presets`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch {
+    // Fallback if offline
+  }
+  return [
+    {
+      id: 'preset_balanced',
+      title: 'Balanced & Radiant Surface',
+      description: 'Uniform diffuse lighting, balanced micro-erythema and low surface shine.',
+      skin_type: 'Normal',
+      skin_tone: 'Medium Warm',
+      measurements: { redness: 28.0, shine: 32.0, texture: 24.0, pores: 26.0 },
+    },
+    {
+      id: 'preset_reactive_redness',
+      title: 'Reactive Redness & Sensitive Barrier',
+      description: 'Elevated cheek chromatic redness, sensitive vascular reactivity, moderate dryness.',
+      skin_type: 'Sensitive',
+      skin_tone: 'Fair Neutral',
+      measurements: { redness: 68.0, shine: 22.0, texture: 42.0, pores: 30.0 },
+    },
+    {
+      id: 'preset_tzone_shine',
+      title: 'T-Zone Shine & Pore Prominence',
+      description: 'Prominent nasal specular shine, enlarged pore density, and combination cheeks.',
+      skin_type: 'Combination',
+      skin_tone: 'Deep Cool',
+      measurements: { redness: 34.0, shine: 72.0, texture: 38.0, pores: 65.0 },
+    },
+    {
+      id: 'preset_dehydrated_texture',
+      title: 'Micro-Texture Unevenness & Dehydration',
+      description: 'Low surface specular shine, visible high-frequency micro-roughness on cheeks and forehead.',
+      skin_type: 'Dry',
+      skin_tone: 'Rich Deep',
+      measurements: { redness: 38.0, shine: 18.0, texture: 66.0, pores: 34.0 },
+    },
+  ];
+}
+
+export async function analyzeSkinImageBackend(
+  payload: {
+    imageBase64?: string;
+    manualMeasurements?: { redness: number; shine: number; texture: number; pores: number };
+    userSkinType?: string;
+    userConcerns?: string[];
+    knownAllergens?: string[];
+    sensitivityLevel?: string;
+  },
+  token?: string | null
+): Promise<BackendSkinAnalysisResult> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${API_BASE_URL}/skin-analysis/analyze`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      image_base64: payload.imageBase64,
+      manual_optical_measurements: payload.manualMeasurements,
+      user_skin_type: payload.userSkinType,
+      user_concerns: payload.userConcerns,
+      known_allergens: payload.knownAllergens,
+      sensitivity_level: payload.sensitivityLevel,
+    }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || 'Failed to complete skin analysis');
+  }
+
+  return await res.json();
+}

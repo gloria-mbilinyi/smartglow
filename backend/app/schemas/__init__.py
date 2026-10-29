@@ -4,6 +4,14 @@ from app.schemas.product import ProductBase, ProductCreate, ProductResponse, Pro
 from app.schemas.order import OrderCreate, OrderResponse, OrderItemCreate, OrderItemResponse, OrderStatusUpdate
 from app.schemas.user import UserRegister, UserLogin, UserProfileUpdate, SkinPreferencesUpdate, UserResponse, TokenResponse
 from app.schemas.inventory import StockUpdatePayload, InventoryItemResponse, InventoryOverviewResponse
+from app.schemas.skin_analysis import (
+    SkinAnalysisRequest,
+    SkinAnalysisResponse,
+    ObservableMetrics,
+    ImageQualityResult,
+    CalibratedRecommendation,
+    RegionMetric,
+)
 
 __all__ = [
     "CategoryBase",
@@ -30,4 +38,10 @@ __all__ = [
     "StockUpdatePayload",
     "InventoryItemResponse",
     "InventoryOverviewResponse",
+    "SkinAnalysisRequest",
+    "SkinAnalysisResponse",
+    "ObservableMetrics",
+    "ImageQualityResult",
+    "CalibratedRecommendation",
+    "RegionMetric",
 ]

@@ -4,9 +4,10 @@ import { ArrowDown, Sparkles, ShieldCheck, Leaf, Truck } from 'lucide-react';
 interface HeroProps {
   onShopClick: () => void;
   onExploreConcerns: () => void;
+  onStartSkinAnalysis?: () => void;
 }
 
-export const Hero: React.FC<HeroProps> = ({ onShopClick, onExploreConcerns }) => {
+export const Hero: React.FC<HeroProps> = ({ onShopClick, onExploreConcerns, onStartSkinAnalysis }) => {
   return (
     <section className="relative overflow-hidden border-b border-stone-200 bg-[#f7f5f0]">
       {/* Editorial Split Hero */}
@@ -28,7 +29,7 @@ export const Hero: React.FC<HeroProps> = ({ onShopClick, onExploreConcerns }) =>
               SmartGlow harmonizes high-potency bio-actives with intelligent skin analysis. Clean, vegan formulations designed to nourish lipid barriers, clarify tone, and restore healthy radiance.
             </p>
 
-            <div className="flex flex-wrap items-center gap-4 pt-2">
+            <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
                 onClick={onShopClick}
                 className="px-6 py-3.5 bg-stone-900 text-stone-50 font-medium text-sm rounded-lg hover:bg-stone-800 transition-colors shadow-sm cursor-pointer focus:ring-2 focus:ring-stone-500 focus:outline-none flex items-center gap-2 whitespace-nowrap"
@@ -37,11 +38,20 @@ export const Hero: React.FC<HeroProps> = ({ onShopClick, onExploreConcerns }) =>
                 <ArrowDown className="w-4 h-4" />
               </button>
 
+              {onStartSkinAnalysis && (
+                <button
+                  onClick={onStartSkinAnalysis}
+                  className="px-5 py-3.5 bg-amber-100/80 text-amber-950 hover:bg-amber-200/90 border border-amber-300/80 font-medium text-sm rounded-lg transition-colors cursor-pointer focus:ring-2 focus:ring-amber-400 focus:outline-none flex items-center gap-2 whitespace-nowrap shadow-xs"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-700" />
+                  <span>AI Skin Analysis</span>
+                </button>
+              )}
+
               <button
                 onClick={onExploreConcerns}
-                className="px-6 py-3.5 bg-white text-stone-800 hover:bg-stone-50 border border-stone-300 font-medium text-sm rounded-lg transition-colors cursor-pointer focus:ring-2 focus:ring-stone-400 focus:outline-none flex items-center gap-2 whitespace-nowrap"
+                className="px-5 py-3.5 bg-white text-stone-800 hover:bg-stone-50 border border-stone-300 font-medium text-sm rounded-lg transition-colors cursor-pointer focus:ring-2 focus:ring-stone-400 focus:outline-none flex items-center gap-2 whitespace-nowrap"
               >
-                <Sparkles className="w-4 h-4 text-amber-700" />
                 <span>Filter by Concern</span>
               </button>
             </div>
