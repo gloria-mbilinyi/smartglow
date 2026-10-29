@@ -9,19 +9,21 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     order_number = Column(String(50), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     customer_name = Column(String(150), nullable=False)
     customer_phone = Column(String(50), nullable=False)
     delivery_address = Column(String(255), nullable=False)
     city = Column(String(100), nullable=False)
     postal_code = Column(String(30), nullable=False)
     payment_method = Column(String(80), default="Cash on Delivery", nullable=False)
-    status = Column(String(50), default="confirmed", nullable=False)  # confirmed, processing, shipped, delivered, cancelled
+    status = Column(String(50), default="confirmed", nullable=False)  # pending, confirmed, processing, shipped, delivered, cancelled
     subtotal = Column(Float, nullable=False)
     shipping_cost = Column(Float, default=0.0, nullable=False)
     total_amount = Column(Float, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
+    user = relationship("User", back_populates="orders")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
 
 

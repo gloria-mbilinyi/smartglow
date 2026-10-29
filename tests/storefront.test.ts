@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MOCK_PRODUCTS } from '../src/data/mockProducts';
-import { CartItem } from '../src/types/store';
+import { CartItem, SkinType } from '../src/types/store';
 
 describe('SmartGlow Cosmetics Storefront Catalog', () => {
   it('contains products across all required categories', () => {
@@ -74,3 +74,57 @@ describe('SmartGlow Shopping Cart Computations', () => {
     expect(overShipping).toBe(0.0);
   });
 });
+
+describe('SmartGlow Phase 5 Skin Profile & Recommendations Logic', () => {
+  it('correctly matches products to customer skin type and concerns', () => {
+    const userProfile: { skinType: SkinType; skinConcerns: string[]; knownAllergens: string[] } = {
+      skinType: 'Dry',
+      skinConcerns: ['Dryness & Dehydration', 'Dullness'],
+      knownAllergens: ['Fragrance'],
+    };
+
+    // Filter products matching Dry or All
+    const compatible = MOCK_PRODUCTS.filter((p) => {
+      const typeMatches = p.skinTypes.includes('All') || p.skinTypes.includes(userProfile.skinType);
+      const allergenSafe = !userProfile.knownAllergens.some((a) =>
+        (p.allIngredients || '').toLowerCase().includes(a.toLowerCase())
+      );
+      return typeMatches && allergenSafe;
+    });
+
+    expect(compatible.length).toBeGreaterThan(0);
+    compatible.forEach((p) => {
+      expect(
+        p.skinTypes.includes('All') || p.skinTypes.includes(userProfile.skinType)
+      ).toBe(true);
+    });
+  });
+
+  it('excludes products containing customer allergens', () => {
+    const allergen = 'Niacinamide';
+    const safeProducts = MOCK_PRODUCTS.filter((p) => {
+      const allText = `${p.allIngredients} ${p.keyIngredients.join(' ')}`.toLowerCase();
+      return !allText.includes(allergen.toLowerCase());
+    });
+
+    safeProducts.forEach((p) => {
+      const allText = `${p.allIngredients} ${p.keyIngredients.join(' ')}`.toLowerCase();
+      expect(allText.includes(allergen.toLowerCase())).toBe(false);
+    });
+  });
+
+  it('correctly flags low stock inventory below threshold', () => {
+    const LOW_STOCK_THRESHOLD = 25;
+    const testItems = [
+      { id: '1', stockCount: 12 },
+      { id: '2', stockCount: 25 },
+      { id: '3', stockCount: 40 },
+      { id: '4', stockCount: 0 },
+    ];
+
+    const lowStock = testItems.filter((i) => i.stockCount < LOW_STOCK_THRESHOLD);
+    expect(lowStock.length).toBe(2); // 12 and 0
+    expect(lowStock.map((i) => i.id)).toEqual(['1', '4']);
+  });
+});
+

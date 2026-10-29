@@ -6,13 +6,27 @@ import { FilterBar } from './components/FilterBar';
 import { ProductCard } from './components/ProductCard';
 import { ProductDetailModal } from './components/ProductDetailModal';
 import { CartDrawer } from './components/CartDrawer';
+import { AccountModal } from './components/AccountModal';
+import { AdminInventoryModal } from './components/AdminInventoryModal';
 import { Footer } from './components/Footer';
 import { MOCK_PRODUCTS } from './data/mockProducts';
 import { Product, ProductCategory, CartItem, FilterState } from './types/store';
-import { fetchStorefrontProducts } from './services/api';
+import { fetchStorefrontProducts, UserProfile, getCurrentUser } from './services/api';
 import { Sparkles, RotateCcw } from 'lucide-react';
 
 export default function App() {
+  // Authentication & Customer Profile State
+  const [authToken, setAuthToken] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('smartglow_auth_token');
+    } catch {
+      return null;
+    }
+  });
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+
   // Storefront Filtering State
   const [filterState, setFilterState] = useState<FilterState>({
     category: 'All',
@@ -21,6 +35,57 @@ export default function App() {
     searchQuery: '',
     sortBy: 'featured',
   });
+
+  // Restore user session if auth token is stored
+  useEffect(() => {
+    if (!authToken) {
+      setCurrentUser(null);
+      return;
+    }
+    let isCancelled = false;
+    getCurrentUser(authToken)
+      .then((user) => {
+        if (!isCancelled) setCurrentUser(user);
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          setCurrentUser(null);
+          setAuthToken(null);
+          try {
+            localStorage.removeItem('smartglow_auth_token');
+          } catch {
+            // Storage error fallback
+          }
+        }
+      });
+    return () => {
+      isCancelled = true;
+    };
+  }, [authToken]);
+
+  const handleAuthSuccess = (token: string, user: UserProfile) => {
+    setAuthToken(token);
+    setCurrentUser(user);
+    try {
+      localStorage.setItem('smartglow_auth_token', token);
+    } catch {
+      // Storage error fallback
+    }
+  };
+
+  const handleLogout = () => {
+    setAuthToken(null);
+    setCurrentUser(null);
+    setIsAccountOpen(false);
+    setIsAdminOpen(false);
+    try {
+      localStorage.removeItem('smartglow_auth_token');
+    } catch {
+      // Storage error fallback
+    }
+  };
+
+  // Cart State with LocalStorage Persistence
 
   // Selected Product for PDP Modal
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -136,6 +201,9 @@ export default function App() {
         onOpenCart={() => setIsCartOpen(true)}
         searchQuery={filterState.searchQuery}
         onSearchChange={(q) => updateFilter({ searchQuery: q })}
+        currentUser={currentUser}
+        onOpenAccount={() => setIsAccountOpen(true)}
+        onOpenAdminWarehouse={() => setIsAdminOpen(true)}
       />
 
       {/* Hero Section */}
@@ -220,7 +288,33 @@ export default function App() {
         onUpdateQuantity={handleUpdateCartQuantity}
         onRemoveItem={handleRemoveCartItem}
         onClearCart={handleClearCart}
+        currentUser={currentUser}
+        authToken={authToken}
       />
+
+      {/* Customer Account & Skin Profile Modal */}
+      <AccountModal
+        isOpen={isAccountOpen}
+        onClose={() => setIsAccountOpen(false)}
+        currentUser={currentUser}
+        authToken={authToken}
+        onAuthSuccess={handleAuthSuccess}
+        onLogout={handleLogout}
+        onAddToCart={(p) => {
+          handleAddToCart(p, 1);
+          setIsAccountOpen(false);
+          setIsCartOpen(true);
+        }}
+      />
+
+      {/* Administrator Inventory & Warehouse Modal */}
+      {currentUser?.role === 'admin' && authToken && (
+        <AdminInventoryModal
+          isOpen={isAdminOpen}
+          onClose={() => setIsAdminOpen(false)}
+          adminToken={authToken}
+        />
+      )}
 
       {/* Footer */}
       <Footer onSelectCategory={(cat) => updateFilter({ category: cat })} />

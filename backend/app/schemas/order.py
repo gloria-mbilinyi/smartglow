@@ -32,6 +32,7 @@ class OrderCreate(BaseModel):
 class OrderResponse(BaseModel):
     id: int
     order_number: str
+    user_id: Optional[int] = None
     customer_name: str
     customer_phone: str
     delivery_address: str
@@ -46,3 +47,7 @@ class OrderResponse(BaseModel):
     items: List[OrderItemResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class OrderStatusUpdate(BaseModel):
+    status: str = Field(..., pattern="^(pending|confirmed|processing|shipped|delivered|cancelled)$")

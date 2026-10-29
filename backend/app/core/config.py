@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = "smartglow_db"
 
+    # Security & JWT Configuration
+    SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "smartglow_dev_super_secret_jwt_key_2026_change_in_production")
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    LOW_STOCK_THRESHOLD: int = 25
+
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),
         extra="ignore",

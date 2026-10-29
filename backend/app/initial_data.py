@@ -287,5 +287,45 @@ def init_db(db: Session) -> None:
             product = Product(**prod_dict, category_id=category_id)
             db.add(product)
 
+    # 3. Seed Default Customer and Admin Accounts
+    from app.models.user import User
+    from app.core.security import get_password_hash
+
+    customer_email = "customer@smartglow.com"
+    customer = db.query(User).filter(User.email == customer_email).first()
+    if not customer:
+        customer = User(
+            email=customer_email,
+            hashed_password=get_password_hash("Password123!"),
+            full_name="Gloria Mbilinyi",
+            phone="+1 (555) 234-5678",
+            role="customer",
+            is_active=True,
+            skin_type="Combination",
+            skin_concerns=["Dullness", "Hyperpigmentation"],
+            sensitivity_level="Low",
+            known_allergens=[],
+            preferred_routine="Clean Botanical Actives",
+        )
+        db.add(customer)
+
+    admin_email = "admin@smartglow-admin.internal"
+    admin = db.query(User).filter(User.email == admin_email).first()
+    if not admin:
+        admin = User(
+            email=admin_email,
+            hashed_password=get_password_hash("AdminPassword123!"),
+            full_name="SmartGlow Administrator",
+            phone="+1 (555) 999-0000",
+            role="admin",
+            is_active=True,
+            skin_type="All",
+            skin_concerns=[],
+            sensitivity_level="Moderate",
+            known_allergens=[],
+            preferred_routine="Clinical Minimalist",
+        )
+        db.add(admin)
+
     db.commit()
-    logger.info("Database initialized with seed catalog.")
+    logger.info("Database initialized with seed catalog and default user accounts.")

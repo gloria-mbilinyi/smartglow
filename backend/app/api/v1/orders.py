@@ -1,11 +1,13 @@
 import random
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.order import Order, OrderItem
 from app.models.product import Product
-from app.schemas.order import OrderCreate, OrderResponse
+from app.models.user import User
+from app.schemas.order import OrderCreate, OrderResponse, OrderStatusUpdate
+from app.api.deps import get_current_user, get_current_user_optional, get_current_active_admin
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 
@@ -14,7 +16,11 @@ STANDARD_SHIPPING_FEE = 6.0
 
 
 @router.post("/", response_model=OrderResponse, status_code=status.HTTP_201_CREATED)
-def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
+def create_order(
+    payload: OrderCreate,
+    current_user: Optional[User] = Depends(get_current_user_optional),
+    db: Session = Depends(get_db),
+):
     """Place an order with real-time stock verification, automatic total calculations, and atomic inventory reduction."""
     if not payload.items:
         raise HTTPException(
@@ -65,9 +71,10 @@ def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
     # 3. Generate unique order number
     order_number = f"SG-{random.randint(100000, 999999)}"
 
-    # 4. Create Order record
+    # 4. Create Order record (link user_id if authenticated)
     order = Order(
         order_number=order_number,
+        user_id=current_user.id if current_user else None,
         customer_name=payload.customer_name.strip(),
         customer_phone=payload.customer_phone.strip(),
         delivery_address=payload.delivery_address.strip(),
@@ -94,6 +101,21 @@ def create_order(payload: OrderCreate, db: Session = Depends(get_db)):
     return OrderResponse.model_validate(order)
 
 
+@router.get("/my-orders", response_model=List[OrderResponse])
+def get_my_orders(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Retrieve personal order history for the currently authenticated customer."""
+    query = db.query(Order).filter(Order.user_id == current_user.id)
+    if current_user.phone:
+        query = db.query(Order).filter(
+            (Order.user_id == current_user.id) | (Order.customer_phone == current_user.phone)
+        )
+    orders = query.order_by(Order.created_at.desc()).all()
+    return [OrderResponse.model_validate(o) for o in orders]
+
+
 @router.get("/{order_number}", response_model=OrderResponse)
 def get_order_by_number(order_number: str, db: Session = Depends(get_db)):
     """Retrieve complete order details and delivery status by order reference."""
@@ -103,4 +125,24 @@ def get_order_by_number(order_number: str, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Order '{order_number}' not found.",
         )
+    return OrderResponse.model_validate(order)
+
+
+@router.patch("/{order_id}/status", response_model=OrderResponse)
+def update_order_status(
+    order_id: int,
+    payload: OrderStatusUpdate,
+    current_admin: User = Depends(get_current_active_admin),
+    db: Session = Depends(get_db),
+):
+    """Administrator endpoint to update order progression across its lifecycle."""
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Order with ID {order_id} not found.",
+        )
+    order.status = payload.status
+    db.commit()
+    db.refresh(order)
     return OrderResponse.model_validate(order)

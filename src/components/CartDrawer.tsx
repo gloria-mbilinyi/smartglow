@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, CheckCircle2, Truck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Plus, Minus, Trash2, ShoppingBag, ArrowRight, CheckCircle2, Truck, UserCheck } from 'lucide-react';
 import { CartItem } from '../types/store';
-import { submitStorefrontOrder, OrderConfirmationResult } from '../services/api';
+import { submitStorefrontOrder, OrderConfirmationResult, UserProfile } from '../services/api';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -10,6 +10,8 @@ interface CartDrawerProps {
   onUpdateQuantity: (productId: string, quantity: number) => void;
   onRemoveItem: (productId: string) => void;
   onClearCart: () => void;
+  currentUser?: UserProfile | null;
+  authToken?: string | null;
 }
 
 export const CartDrawer: React.FC<CartDrawerProps> = ({
@@ -19,18 +21,30 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
+  currentUser,
+  authToken,
 }) => {
   const [checkoutStep, setCheckoutStep] = useState<'cart' | 'checkout' | 'confirmed'>('cart');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [confirmedOrder, setConfirmedOrder] = useState<OrderConfirmationResult | null>(null);
   const [formData, setFormData] = useState({
-    name: 'Gloria Mbilinyi',
-    phone: '+1 (555) 234-5678',
+    name: currentUser?.fullName || 'Gloria Mbilinyi',
+    phone: currentUser?.phone || '+1 (555) 234-5678',
     address: '450 Sunset Boulevard, Suite 12',
     city: 'Los Angeles',
     postalCode: '90028',
     paymentMethod: 'Cash on Delivery / Direct Handover',
   });
+
+  useEffect(() => {
+    if (currentUser) {
+      setFormData((prev) => ({
+        ...prev,
+        name: currentUser.fullName || prev.name,
+        phone: currentUser.phone || prev.phone,
+      }));
+    }
+  }, [currentUser]);
 
   if (!isOpen) return null;
 
@@ -53,6 +67,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         postalCode: formData.postalCode,
         paymentMethod: formData.paymentMethod,
         items,
+        token: authToken || undefined,
       });
       setConfirmedOrder(result);
       setCheckoutStep('confirmed');
@@ -253,6 +268,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <div className="p-3 bg-amber-50/80 border border-amber-200 rounded-lg text-amber-900 leading-relaxed">
                   <strong>Cash on Delivery:</strong> Pay in person upon receiving your delivery parcel. Please confirm your delivery destination.
                 </div>
+
+                {currentUser && (
+                  <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Order will be automatically recorded to <strong>{currentUser.email}</strong></span>
+                  </div>
+                )}
 
                 <div className="space-y-3">
                   <div>

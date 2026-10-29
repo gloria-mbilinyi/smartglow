@@ -1,4 +1,5 @@
 from app.db.base import Base
+from app.models.user import User
 from app.models.category import Category
 from app.models.ingredient import Ingredient, product_ingredients
 from app.models.product import Product
@@ -6,6 +7,7 @@ from app.models.order import Order, OrderItem
 
 __all__ = [
     "Base",
+    "User",
     "Category",
     "Ingredient",
     "product_ingredients",

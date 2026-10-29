@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Search, X, Menu } from 'lucide-react';
+import { ShoppingBag, Search, X, Menu, User, Warehouse } from 'lucide-react';
 import { ProductCategory } from '../types/store';
+import { UserProfile } from '../services/api';
 
 interface NavbarProps {
   activeCategory: ProductCategory;
@@ -9,6 +10,9 @@ interface NavbarProps {
   onOpenCart: () => void;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  currentUser: UserProfile | null;
+  onOpenAccount: () => void;
+  onOpenAdminWarehouse?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -18,6 +22,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCart,
   searchQuery,
   onSearchChange,
+  currentUser,
+  onOpenAccount,
+  onOpenAdminWarehouse,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -101,6 +108,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </div>
 
+          {/* Admin Warehouse Button (Visible only to Admin) */}
+          {currentUser?.role === 'admin' && onOpenAdminWarehouse && (
+            <button
+              onClick={onOpenAdminWarehouse}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg transition-all cursor-pointer shadow-xs"
+              title="Warehouse Inventory Control"
+            >
+              <Warehouse className="w-3.5 h-3.5 text-amber-800" />
+              <span>Warehouse</span>
+            </button>
+          )}
+
+          {/* Customer Account Button */}
+          <button
+            onClick={onOpenAccount}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-stone-800 bg-white hover:bg-stone-100 border border-stone-300/80 rounded-lg transition-all cursor-pointer shadow-xs"
+            aria-label={currentUser ? `Account for ${currentUser.fullName}` : 'Sign in to your account'}
+          >
+            <User className="w-3.5 h-3.5 text-stone-700" />
+            <span className="hidden sm:inline font-medium">
+              {currentUser ? currentUser.fullName.split(' ')[0] : 'Sign In'}
+            </span>
+          </button>
+
           {/* Cart Button */}
           <button
             onClick={onOpenCart}
@@ -127,7 +158,32 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Mobile Menu Dropdown */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden border-t border-stone-200 bg-[#faf9f6] px-4 py-4 space-y-2">
+        <div className="lg:hidden border-t border-stone-200 bg-[#faf9f6] px-4 py-4 space-y-3">
+          <div className="flex gap-2 pb-2 border-b border-stone-200">
+            <button
+              onClick={() => {
+                onOpenAccount();
+                setIsMobileMenuOpen(false);
+              }}
+              className="flex-1 flex items-center justify-center gap-2 py-2 px-3 bg-white border border-stone-300 rounded-lg text-xs font-medium text-stone-800"
+            >
+              <User className="w-4 h-4 text-stone-700" />
+              <span>{currentUser ? currentUser.fullName : 'Account / Sign In'}</span>
+            </button>
+            {currentUser?.role === 'admin' && onOpenAdminWarehouse && (
+              <button
+                onClick={() => {
+                  onOpenAdminWarehouse();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center justify-center gap-1.5 py-2 px-3 bg-amber-50 border border-amber-300 rounded-lg text-xs font-semibold text-amber-900"
+              >
+                <Warehouse className="w-4 h-4 text-amber-800" />
+                <span>Warehouse</span>
+              </button>
+            )}
+          </div>
+
           <div className="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-2 px-2">
             Categories
           </div>
